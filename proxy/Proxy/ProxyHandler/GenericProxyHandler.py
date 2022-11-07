@@ -25,8 +25,9 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         """Default mode"""
         response = self.request_url(self.path)
         self.send_response(response.status_code)
+
         for k, v in response.headers.items():
             self.send_header(k, v)
+
         self.end_headers()
         self.wfile.write(response.content)
-        self.wfile.close()
