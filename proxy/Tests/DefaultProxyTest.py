@@ -25,9 +25,9 @@ class TestDefaultProxy(unittest.TestCase):
 
     def test_default_fetch(self) -> None:
         with requests.Session() as s:
-            response = s.get(CONTROL_URL, proxies=self.proxies)
+            response = s.get(CONTROL_URL, proxies=self.proxies, timeout=3)
             self.assertEqual(response.status_code, 200)
-            resp2 = requests.get(CONTROL_URL)
+            resp2 = requests.get(CONTROL_URL, timeout=3)
 
             assert response.content == resp2.content, (
                 response.content + b"\n\n" + resp2.content
@@ -40,7 +40,7 @@ class TestDefaultProxy(unittest.TestCase):
             except Exception as e:
                 assert False, f"Failed to fetch {url}: {e}"
             self.assertEqual(response.status_code, 200)
-            resp2 = requests.get(url)
+            resp2 = requests.get(url, timeout=3)
 
             assert response.content == resp2.content, (
                 response.content + b"\n\n" + resp2.content

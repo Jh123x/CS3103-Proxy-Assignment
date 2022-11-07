@@ -13,12 +13,12 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
     cache = {}
 
     def request_url(self: "GenericProxyHandler", url: str) -> CacheItem:
-        if url in self.cache:
-            return self.cache[url]
+        # if url in self.cache:
+        #     return self.cache[url]
         with Session() as s:
             response = s.get(url)
             value = CacheItem(response)
-            self.cache[url] = value
+            # self.cache[url] = value
             return value
 
     def do_GET(self) -> None:
@@ -27,6 +27,8 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         self.send_response(response.status_code)
 
         for k, v in response.headers.items():
+            if 'encoding' in k.lower():
+                continue
             self.send_header(k, v)
 
         self.end_headers()
