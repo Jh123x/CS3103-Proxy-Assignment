@@ -31,4 +31,4 @@ if __name__ == "__main__":
     image_replacement = args.image_sub_mode
     attack = args.attacker_mode
     
-    run_proxy(port, image_replacement, attack)
+    run_proxy(port, attack, image_replacement)
