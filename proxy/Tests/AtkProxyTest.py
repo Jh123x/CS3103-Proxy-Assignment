@@ -49,7 +49,7 @@ class TestAtkProxy(unittest.TestCase):
             )
             assert (
                 b"You are being attacked" == response.content
-            ), "Attack mode missing line."
+            ), f"Attack mode missing line, got {response.content} instead."
 
 
 if __name__ == "__main__":

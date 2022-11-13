@@ -1,5 +1,6 @@
 import argparse
-from Proxy import run_proxy
+from Proxy import start
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -30,5 +31,8 @@ if __name__ == "__main__":
     port = args.port
     image_replacement = args.image_sub_mode
     attack = args.attacker_mode
-    
-    run_proxy(port, attack, image_replacement)
+
+    start(
+        port,
+        f"{attack}{image_replacement}"
+    )
