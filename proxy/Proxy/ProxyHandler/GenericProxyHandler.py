@@ -7,6 +7,7 @@ class CacheItem:
         self.status_code = response.status_code
         self.headers = response.headers
         self.content = response.content
+        print(response.raw.read())
 
 
 class GenericProxyHandler(BaseHTTPRequestHandler):
@@ -33,3 +34,4 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
 
         self.end_headers()
         self.wfile.write(response.content)
+        self.wfile.write(b'\r\n')

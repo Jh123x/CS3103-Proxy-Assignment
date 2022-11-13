@@ -1,5 +1,5 @@
 import unittest
-from Tests import TestDefaultProxy, TestAtkProxy
+from Tests import TestDefaultProxy, TestAtkProxy, TestSanityCheck
 
 
 if __name__ == "__main__":
