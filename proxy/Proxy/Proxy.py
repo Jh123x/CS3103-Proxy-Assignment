@@ -21,6 +21,7 @@ def generic_mode(
         conn.close()
         return
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    content_len = 0
     try:
 
         sock.connect((webserver, port))
@@ -35,7 +36,7 @@ def generic_mode(
     except socket.error as err:
         print(err)
     except Exception as err:
-        print(err.with_traceback())
+        print(err)
     finally:
         sock.close()
         conn.close()
@@ -43,8 +44,8 @@ def generic_mode(
 
 
 def atk_mode(
-        conn: socket.socket,
-        *_,
+    conn: socket.socket,
+    *_,
 ) -> None:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -68,13 +69,13 @@ def pic_mode(
         sock.connect((webserver, port))
         sock.send(data_recv)
         recv_file = RecvFile(sock, buffer_size)
-        content_type = recv_file.get_headers().get(b'content-type', '')
-        if content_type.startswith(b'image'):
+        content_type = recv_file.get_headers().get(b"content-type", b"")
+        if content_type.startswith(b"image"):
             webserver = ALT_IMG_SERVER
             port = ALT_IMG_PORT
-            tmp = data_recv.split(b'\r\n')
-            tmp[0] = b'GET ' + ALT_IMAGE_LOC + b' HTTP/1.1'
-            data_recv = b'\r\n'.join(tmp)
+            tmp = data_recv.split(b"\r\n")
+            tmp[0] = b"GET " + ALT_IMAGE_LOC + b" HTTP/1.1"
+            data_recv = b"\r\n".join(tmp)
         generic_mode(conn, webserver, port, data_recv, buffer_size)
     except socket.error as err:
         print(err)
@@ -83,12 +84,7 @@ def pic_mode(
         conn.close()
 
 
-d = {
-    '10': atk_mode,
-    '11': atk_mode,
-    '01': pic_mode,
-    '00': generic_mode
-}
+d = {"10": atk_mode, "11": atk_mode, "01": pic_mode, "00": generic_mode}
 
 
 def conn_string(conn, data, mode, buffer_size=8192):
@@ -99,7 +95,7 @@ def conn_string(conn, data, mode, buffer_size=8192):
         if http_pos == -1:
             temp = url
         else:
-            temp = url[(http_pos + 3):]
+            temp = url[(http_pos + 3) :]
 
         port_pos = temp.find(b":")
 
@@ -112,16 +108,18 @@ def conn_string(conn, data, mode, buffer_size=8192):
             port = 80
             webserver = temp[:webserver_pos]
         else:
-            port = int((temp[(port_pos + 1):])[: webserver_pos - port_pos - 1])
+            port = int((temp[(port_pos + 1) :])[: webserver_pos - port_pos - 1])
             webserver = temp[:port_pos]
-        d.get(mode)(conn, webserver, port, data, buffer_size)
+        d.get(mode, generic_mode)(conn, webserver, port, data, buffer_size)
     except Exception:
         pass
 
 
-def start(listening_port: int, mode: str, max_connection: int = 5, buffer_size: int = 8192):  # Main Program
+def start(
+    listening_port: int, mode: str, max_connection: int = 5, buffer_size: int = 8192
+):  # Main Program
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.bind(("", listening_port))
         sock.listen(max_connection)
         print(f"Server started successfully on {listening_port}")
@@ -130,11 +128,10 @@ def start(listening_port: int, mode: str, max_connection: int = 5, buffer_size: 
 
     while True:
         try:
-            conn, addr = sock.accept()  # Accept connection from client browser
+            conn, _ = sock.accept()  # Accept connection from client browser
             data = conn.recv(buffer_size)  # Receive client data
             start_new_thread(
-                conn_string,
-                (conn, data, mode, buffer_size)
+                conn_string, (conn, data, mode, buffer_size)
             )  # Starting a thread
         except KeyboardInterrupt:
             sock.close()
