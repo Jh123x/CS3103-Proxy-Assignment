@@ -1,6 +1,9 @@
+from _thread import start_new_thread
 import re
 import socket
-from _thread import start_new_thread
+from urllib.parse import urlparse
+
+
 from .Helper.RecvFile import RecvFile
 from .constants import ALT_IMG_SERVER, ALT_IMG_PORT, ALT_IMAGE_LOC
 
@@ -93,23 +96,15 @@ def pic_mode(
 d = {"10": atk_mode, "11": atk_mode, "01": pic_mode, "00": generic_mode}
 regex = re.compile(r"^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?")
 
+
 def setup_connection(
     conn: socket.socket, data: bytes, mode: str, buffer_size: int = 8192
-):
-    port = 80
-    first_line = data.split(b"\n")[0]
-    url = first_line.split(b" ")[1]
-    webserver = url
-    regex_match = regex.match(url.decode())
-    if regex_match is not None:
-        split = regex_match.group(4).split(':')
-        if len(split) == 1:
-            webserver = split[0].encode()
-        else:
-            webserver = split[0].encode()
-            port = int(split[1])
-
-    d.get(mode, generic_mode)(conn, webserver, port, data, buffer_size, url)
+) -> None:
+    url = data.split(b"\r\n")[0].split(b" ")[1]
+    parsed_url = urlparse(url)
+    webserver = parsed_url.hostname or url
+    port = parsed_url.port or 80
+    return d.get(mode, generic_mode)(conn, webserver, port, data, buffer_size, url)
 
 
 def start(
