@@ -1,3 +1,4 @@
+import re
 import socket
 from _thread import start_new_thread
 from .Helper.RecvFile import RecvFile
@@ -12,6 +13,7 @@ def generic_mode(
     port: int,
     data_recv: bytes,
     buffer_size: int = 8192,
+    url: bytes = b"",
 ) -> None:
     key = (webserver, port, data_recv)
     if key in cache:
@@ -40,16 +42,19 @@ def generic_mode(
     finally:
         sock.close()
         conn.close()
-        print(f"{webserver.decode()}, {content_len}")
+        print(f"{url.decode()}, {content_len}")
 
 
 def atk_mode(
     conn: socket.socket,
     *_,
 ) -> None:
+    url: bytes = _[-1]
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    data = b"HTTP/1.1 200 OK\r\n\r\nYou are being attacked"
     try:
-        conn.send(b"HTTP/1.1 200 OK\r\n\r\nYou are being attacked")
+        conn.send(data)
+        print(f"{url.decode()}, {len(data)}")
     except socket.error as err:
         print(err)
     finally:
@@ -63,6 +68,7 @@ def pic_mode(
     port: int,
     data_recv: bytes,
     buffer_size: int = 8192,
+    url: bytes = b"",
 ):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -76,7 +82,7 @@ def pic_mode(
             tmp = data_recv.split(b"\r\n")
             tmp[0] = b"GET " + ALT_IMAGE_LOC + b" HTTP/1.1"
             data_recv = b"\r\n".join(tmp)
-        generic_mode(conn, webserver, port, data_recv, buffer_size)
+        generic_mode(conn, webserver, port, data_recv, buffer_size, url)
     except socket.error as err:
         print(err)
     finally:
@@ -85,34 +91,25 @@ def pic_mode(
 
 
 d = {"10": atk_mode, "11": atk_mode, "01": pic_mode, "00": generic_mode}
+regex = re.compile(r"^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?")
 
-
-def conn_string(conn, data, mode, buffer_size=8192):
-    try:
-        first_line = data.split(b"\n")[0]
-        url = first_line.split()[1]
-        http_pos = url.find(b"://")  # Finding the position of ://
-        if http_pos == -1:
-            temp = url
+def setup_connection(
+    conn: socket.socket, data: bytes, mode: str, buffer_size: int = 8192
+):
+    port = 80
+    first_line = data.split(b"\n")[0]
+    url = first_line.split(b" ")[1]
+    webserver = url
+    regex_match = regex.match(url.decode())
+    if regex_match is not None:
+        split = regex_match.group(4).split(':')
+        if len(split) == 1:
+            webserver = split[0].encode()
         else:
-            temp = url[(http_pos + 3) :]
+            webserver = split[0].encode()
+            port = int(split[1])
 
-        port_pos = temp.find(b":")
-
-        webserver_pos = temp.find(b"/")
-        if webserver_pos == -1:
-            webserver_pos = len(temp)
-        webserver = ""
-        port = -1
-        if port_pos == -1 or webserver_pos < port_pos:
-            port = 80
-            webserver = temp[:webserver_pos]
-        else:
-            port = int((temp[(port_pos + 1) :])[: webserver_pos - port_pos - 1])
-            webserver = temp[:port_pos]
-        d.get(mode, generic_mode)(conn, webserver, port, data, buffer_size)
-    except Exception:
-        pass
+    d.get(mode, generic_mode)(conn, webserver, port, data, buffer_size, url)
 
 
 def start(
@@ -131,7 +128,7 @@ def start(
             conn, _ = sock.accept()  # Accept connection from client browser
             data = conn.recv(buffer_size)  # Receive client data
             start_new_thread(
-                conn_string, (conn, data, mode, buffer_size)
+                setup_connection, (conn, data, mode, buffer_size)
             )  # Starting a thread
         except KeyboardInterrupt:
             sock.close()
