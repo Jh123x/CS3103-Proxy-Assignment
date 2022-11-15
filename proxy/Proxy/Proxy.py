@@ -104,6 +104,7 @@ def setup_connection(
     parsed_url = urlparse(url)
     webserver = parsed_url.hostname or url
     port = parsed_url.port or 80
+    print(data)
     return d.get(mode, generic_mode)(conn, webserver, port, data, buffer_size, url)
 
 
