@@ -13,7 +13,8 @@ class TestAtkProxy(unittest.TestCase):
     def setUp(self) -> None:
         self.port = 1234
         _, w = mp.Pipe()
-        self.p = mp.Process(target=proxy_stdout_bypass, args=(self.port, 1, 0, w))
+        self.p = mp.Process(target=proxy_stdout_bypass,
+                            args=(self.port, 1, 0, w))
         self.p.start()
         self.proxies = {
             "http": f"127.0.0.1:{self.port}",
@@ -35,8 +36,9 @@ class TestAtkProxy(unittest.TestCase):
                 response.content + b"\n\n" + resp2.content
             )
             assert (
-                b"You are being attacked" == response.content
+                b"You are being attacked\r\n\r\n" == response.content
             ), "Attack mode missing line."
+            assert response.headers['Content-Type'] == 'text/html', "Wrong Content Type"
 
     def test_run_default_test_cases(self) -> None:
         for url in TEST_URL:
@@ -48,8 +50,9 @@ class TestAtkProxy(unittest.TestCase):
                 response.content + b"\n\n" + resp2.content
             )
             assert (
-                b"You are being attacked" == response.content
+                b"You are being attacked\r\n\r\n" == response.content
             ), f"Attack mode missing line, got {response.content} instead."
+            assert response.headers['Content-Type'] == 'text/html', "Wrong Content Type"
 
 
 if __name__ == "__main__":

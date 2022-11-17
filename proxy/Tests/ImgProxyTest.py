@@ -1,19 +1,19 @@
+import socket
 import requests
 import unittest
-import socket
 import multiprocessing as mp
 
-from .constants import CONTROL_URL, TEST_URL
+from .constants import CONTROL_URL, TEST_URL, IMG_URLS
 from .utils import proxy_stdout_bypass
 
 
-class TestDefaultProxy(unittest.TestCase):
+class TestImgProxy(unittest.TestCase):
     """Test the default setup of the Proxy"""
 
     def setUp(self) -> None:
         self.port = 1234
-        _, w = mp.Pipe()
-        self.p = mp.Process(target=proxy_stdout_bypass, args=(self.port, 0, 0, w))
+        self.p = mp.Process(target=proxy_stdout_bypass,
+                            args=(self.port, 0, 1))
         self.p.start()
         self.proxies = {
             "http": f"127.0.0.1:{self.port}",
@@ -44,7 +44,20 @@ class TestDefaultProxy(unittest.TestCase):
             resp2 = requests.get(url, timeout=3)
 
             assert response.content == resp2.content, (
-                response.content + b"\n\n" + resp2.content
+                "They should be equal"
+            )
+
+    def test_run_img_test_cases(self) -> None:
+        for url in IMG_URLS:
+            try:
+                response = requests.get(url, proxies=self.proxies, timeout=3)
+            except Exception as e:
+                assert False, f"Failed to fetch {url}: {e}"
+            self.assertEqual(response.status_code, 200)
+            resp2 = requests.get(url, timeout=3)
+
+            assert response.content != resp2.content, (
+                "They should not be equal"
             )
 
     def test_run_unparsable_url(self) -> None:
@@ -57,7 +70,7 @@ class TestDefaultProxy(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         resp2 = requests.get(url)
         assert response.content == resp2.content, (
-            response.content + b"\n\n" + resp2.content
+            "They are not suppose to be equal"
         )
 
     def test_malformed_http_request(self) -> None:
@@ -71,6 +84,3 @@ class TestDefaultProxy(unittest.TestCase):
         url = "http://1.1.1.1.1/test"
         response = requests.get(url, proxies=self.proxies)
         self.assertEqual(response.status_code, 400)
-
-if __name__ == "__main__":
-    unittest.main()
