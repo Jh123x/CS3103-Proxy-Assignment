@@ -1,0 +1,20 @@
+FROM python:3.9.15-bullseye
+
+# Set the working directory to /app
+WORKDIR /app
+
+# Create the virtual environment
+RUN python -m venv venv
+
+# Install requirements
+COPY requirements.txt /app
+RUN venv/bin/pip install -r requirements.txt
+
+# Copy the current directory contents into the container at /app
+COPY . /app
+
+# Make port 80 available to the world outside this container
+EXPOSE 80
+
+# Run gunicorn
+CMD ["venv/bin/gunicorn", "--bind", "0.0.0.0", "--workers", "3", "app:app"]
