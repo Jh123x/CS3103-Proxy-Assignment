@@ -21,31 +21,30 @@ def generic_mode(
     key = (webserver, port, data_recv)
     if key in cache:
         send_data = cache[key]
-        content_len = len(send_data)
         conn.send(send_data)
+        print(f"{url.decode()}, {len(send_data)}")
         conn.close()
         return
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    content_len = 0
+    sock.settimeout(5)
     try:
 
         sock.connect((webserver, port))
+        sock.settimeout(None)
         sock.send(data_recv)
         recv_file = RecvFile(sock, buffer_size)
-        whole_content = recv_file.get_raw_headers() + recv_file.get_content()
-        content_len = len(whole_content)
-        conn.send(whole_content)
-        cache[key] = whole_content
-    except socket.timeout as err:
-        conn.send(b"HTTP/1.1 408 Request Timeout\r\n\r\n")
-    except socket.error as err:
-        print(err)
-    except Exception as err:
-        print(err)
+        data = recv_file.get_raw_headers() + recv_file.get_content()
+    except socket.timeout:
+        data = b"HTTP/1.1 408 Request Timeout\r\n\r\nRequest Timeout\r\n\r\n"
+    except Exception as e:
+        data = b"HTTP/1.1 400 Bad Request\r\n\r\n" + \
+            f"{e}".encode() + b"\r\n\r\n"
     finally:
+        conn.send(data)
+        cache[key] = data
         sock.close()
         conn.close()
-        print(f"{url.decode()}, {content_len}")
+        print(f"{url.decode()}, {len(data)}")
 
 
 def atk_mode(
@@ -54,7 +53,7 @@ def atk_mode(
 ) -> None:
     url: bytes = _[-1]
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    data = b"HTTP/1.1 200 OK\r\n\r\nYou are being attacked"
+    data = b"HTTP/1.1 200 OK\r\n\r\nYou are being attacked\r\n\r\n"
     try:
         conn.send(data)
         print(f"{url.decode()}, {len(data)}")
@@ -86,15 +85,19 @@ def pic_mode(
             tmp[0] = b"GET " + ALT_IMAGE_LOC + b" HTTP/1.1"
             data_recv = b"\r\n".join(tmp)
         generic_mode(conn, webserver, port, data_recv, buffer_size, url)
-    except socket.error as err:
-        print(err)
+    except socket.error as e:
+        data = b"HTTP/1.1 400 Bad Request\r\n\r\n" + \
+            f"{e}".encode() + b"\r\n\r\n"
+        conn.send(data)
+        print(f"{url.decode()}, {len(data)}")
     finally:
         sock.close()
         conn.close()
 
 
 d = {"10": atk_mode, "11": atk_mode, "01": pic_mode, "00": generic_mode}
-regex = re.compile(r"^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?")
+regex = re.compile(
+    r"^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?")
 
 
 def setup_connection(
@@ -104,7 +107,6 @@ def setup_connection(
     parsed_url = urlparse(url)
     webserver = parsed_url.hostname or url
     port = parsed_url.port or 80
-    print(data)
     return d.get(mode, generic_mode)(conn, webserver, port, data, buffer_size, url)
 
 
