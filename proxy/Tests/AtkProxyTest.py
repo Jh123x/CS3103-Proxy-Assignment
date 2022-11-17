@@ -36,9 +36,12 @@ class TestAtkProxy(unittest.TestCase):
                 response.content + b"\n\n" + resp2.content
             )
             assert (
-                b"You are being attacked\r\n\r\n" == response.content
+                b"<html><div>You are being attacked</div><html>" == response.content
             ), "Attack mode missing line."
             assert response.headers['Content-Type'] == 'text/html', "Wrong Content Type"
+            assert int(response.headers['Content-Length']) == len(
+                response.content
+            ), f"Expected {len(response.content)} but got {response.headers['Content-Length']}"
 
     def test_run_default_test_cases(self) -> None:
         for url in TEST_URL:
@@ -50,9 +53,12 @@ class TestAtkProxy(unittest.TestCase):
                 response.content + b"\n\n" + resp2.content
             )
             assert (
-                b"You are being attacked\r\n\r\n" == response.content
+                b"<html><div>You are being attacked</div><html>" == response.content
             ), f"Attack mode missing line, got {response.content} instead."
             assert response.headers['Content-Type'] == 'text/html', "Wrong Content Type"
+            assert int(response.headers['Content-Length']) == len(
+                response.content
+            ), f"Expected {len(response.content)} but got {response.headers['Content-Length']}"
 
 
 if __name__ == "__main__":

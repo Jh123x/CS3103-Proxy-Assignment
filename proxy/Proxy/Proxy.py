@@ -52,7 +52,7 @@ def atk_mode(
 ) -> None:
     url: bytes = _[-1]
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    data = b"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: Close\r\n\r\nYou are being attacked\r\n\r\n"
+    data = b"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: Close\r\nContent-Length: 45\r\n\r\n<html><div>You are being attacked</div><html>\r\n\r\n"
     try:
         conn.send(data)
         print(f"{url.decode()}, {len(data)}")
