@@ -28,7 +28,6 @@ def generic_mode(
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(5)
     try:
-
         sock.connect((webserver, port))
         sock.settimeout(None)
         sock.send(data_recv)
@@ -53,7 +52,7 @@ def atk_mode(
 ) -> None:
     url: bytes = _[-1]
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    data = b"HTTP/1.1 200 OK\r\n\r\nYou are being attacked\r\n\r\n"
+    data = b"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: Close\r\n\r\nYou are being attacked\r\n\r\n"
     try:
         conn.send(data)
         print(f"{url.decode()}, {len(data)}")
@@ -85,9 +84,8 @@ def pic_mode(
             tmp[0] = b"GET " + ALT_IMAGE_LOC + b" HTTP/1.1"
             data_recv = b"\r\n".join(tmp)
         generic_mode(conn, webserver, port, data_recv, buffer_size, url)
-    except socket.error as e:
-        data = b"HTTP/1.1 400 Bad Request\r\n\r\n" + \
-            f"{e}".encode() + b"\r\n\r\n"
+    except socket.error:
+        data = b"HTTP/1.1 400 Bad Request\r\n\r\n"
         conn.send(data)
         print(f"{url.decode()}, {len(data)}")
     finally:
@@ -103,11 +101,16 @@ regex = re.compile(
 def setup_connection(
     conn: socket.socket, data: bytes, mode: str, buffer_size: int = 8192
 ) -> None:
-    url = data.split(b"\r\n")[0].split(b" ")[1]
-    parsed_url = urlparse(url)
-    webserver = parsed_url.hostname or url
-    port = parsed_url.port or 80
-    return d.get(mode, generic_mode)(conn, webserver, port, data, buffer_size, url)
+    try:
+        url = data.split(b"\r\n")[0].split(b" ")[1]
+        parsed_url = urlparse(url)
+        webserver = parsed_url.hostname or url
+        port = parsed_url.port or 80
+        return d.get(mode, generic_mode)(conn, webserver, port, data, buffer_size, url)
+    except:
+        conn.send(b"HTTP/1.1 400 Bad Request\r\n\r\n")
+        conn.close()
+        return
 
 
 def start(
