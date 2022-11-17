@@ -3,11 +3,8 @@ import re
 import socket
 from urllib.parse import urlparse
 
-
 from .Helper.RecvFile import RecvFile
 from .constants import ALT_IMG_SERVER, ALT_IMG_PORT, ALT_IMAGE_LOC
-
-cache = {}
 
 
 def generic_mode(
@@ -18,13 +15,6 @@ def generic_mode(
     buffer_size: int = 8192,
     url: bytes = b"",
 ) -> None:
-    key = (webserver, port, data_recv)
-    if key in cache:
-        send_data = cache[key]
-        conn.send(send_data)
-        print(f"{url.decode()}, {len(send_data)}")
-        conn.close()
-        return
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(5)
     try:
@@ -40,9 +30,8 @@ def generic_mode(
             f"{e}".encode() + b"\r\n\r\n"
     finally:
         conn.send(data)
-        cache[key] = data
-        sock.close()
         conn.close()
+        sock.close()
         print(f"{url.decode()}, {len(data)}")
 
 
@@ -50,15 +39,16 @@ def atk_mode(
     conn: socket.socket,
     *_,
 ) -> None:
-    url: bytes = _[-1]
+    
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     data = b"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: Close\r\nContent-Length: 45\r\n\r\n<html><div>You are being attacked</div><html>\r\n\r\n"
     try:
-        conn.send(data)
+        url: bytes = _[-1]
         print(f"{url.decode()}, {len(data)}")
-    except socket.error as err:
-        print(err)
+    except:
+        data = b"HTTP/1.1 400 Bad Request\r\n\r\n"
     finally:
+        conn.send(data)
         sock.close()
         conn.close()
 
@@ -84,8 +74,9 @@ def pic_mode(
             tmp[0] = b"GET " + ALT_IMAGE_LOC + b" HTTP/1.1"
             data_recv = b"\r\n".join(tmp)
         generic_mode(conn, webserver, port, data_recv, buffer_size, url)
-    except socket.error:
-        data = b"HTTP/1.1 400 Bad Request\r\n\r\n"
+    except Exception as e:
+        data = b"HTTP/1.1 400 Bad Request\r\n\r\n" + \
+            b"Error: " + f"{e}".encode() + b"\r\n\r\n"
         conn.send(data)
         print(f"{url.decode()}, {len(data)}")
     finally:
@@ -107,15 +98,17 @@ def setup_connection(
         webserver = parsed_url.hostname or url
         port = parsed_url.port or 80
         return d.get(mode, generic_mode)(conn, webserver, port, data, buffer_size, url)
-    except:
+    except IndexError:
         conn.send(b"HTTP/1.1 400 Bad Request\r\n\r\n")
+    except Exception:
+        conn.send(b"HTTP/1.1 400 Bad Request\r\n\r\n")
+    finally:
         conn.close()
-        return
 
 
 def start(
     listening_port: int, mode: str, max_connection: int = 5, buffer_size: int = 8192
-):  # Main Program
+) -> None:  # Main Program
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock.bind(("", listening_port))
@@ -124,13 +117,16 @@ def start(
     except Exception as e:
         print(f"Unable to Initialize Socket: {e}")
 
-    while True:
-        try:
+    try:
+        while True:    
             conn, _ = sock.accept()  # Accept connection from client browser
             data = conn.recv(buffer_size)  # Receive client data
             start_new_thread(
                 setup_connection, (conn, data, mode, buffer_size)
             )  # Starting a thread
-        except KeyboardInterrupt:
-            sock.close()
-            print("\nShutting down")
+    except KeyboardInterrupt:
+        print("\nShutting down")
+    except Exception as e:
+        print('\nServer failed to start: ',e )
+    finally:
+        sock.close()

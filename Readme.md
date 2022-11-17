@@ -4,7 +4,7 @@ A proxy with extensions
 
 ## Requirements
 
-1. Python 3 > 3.6
+1. Python 3 > 3.8
 
 ## Usage
 

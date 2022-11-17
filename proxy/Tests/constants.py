@@ -1,3 +1,5 @@
+TEST_PORT = 4001
+
 CONTROL_URL = "http://help.websiteos.com/websiteos/example_of_a_simple_html_page.htm"
 
 IMG_URLS = [

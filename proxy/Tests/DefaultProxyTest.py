@@ -3,7 +3,7 @@ import unittest
 import socket
 import multiprocessing as mp
 
-from .constants import CONTROL_URL, TEST_URL
+from .constants import CONTROL_URL, TEST_URL, TEST_PORT
 from .utils import proxy_stdout_bypass
 
 
@@ -11,9 +11,9 @@ class TestDefaultProxy(unittest.TestCase):
     """Test the default setup of the Proxy"""
 
     def setUp(self) -> None:
-        self.port = 1234
+        self.port = TEST_PORT
         _, w = mp.Pipe()
-        self.p = mp.Process(target=proxy_stdout_bypass, args=(self.port, 0, 0, w))
+        self.p = mp.Process(target=proxy_stdout_bypass, args=(self.port, 0, 0))
         self.p.start()
         self.proxies = {
             "http": f"127.0.0.1:{self.port}",
