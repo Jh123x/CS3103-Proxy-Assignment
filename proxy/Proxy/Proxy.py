@@ -17,22 +17,23 @@ def generic_mode(
 ) -> None:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(5)
+    content_len = 0
     try:
         sock.connect((webserver, port))
         sock.settimeout(None)
         sock.send(data_recv)
         recv_file = RecvFile(sock, buffer_size)
         data = recv_file.get_raw_headers() + recv_file.get_content()
+        content_len = len(recv_file.get_content())
     except socket.timeout:
-        data = b"HTTP/1.1 408 Request Timeout\r\n\r\nRequest Timeout\r\n\r\n"
+        data = b"HTTP/1.1 408 Request Timeout\r\n\r\n"
     except Exception as e:
-        data = b"HTTP/1.1 400 Bad Request\r\n\r\n" + \
-            f"{e}".encode() + b"\r\n\r\n"
+        data = b"HTTP/1.1 400 Bad Request\r\n\r\n"
     finally:
         conn.send(data)
         conn.close()
         sock.close()
-        print(f"{url.decode()}, {len(data)}")
+        print(f"{url.decode()}, {content_len}")
 
 
 def atk_mode(
@@ -44,7 +45,7 @@ def atk_mode(
     data = b"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: Close\r\nContent-Length: 45\r\n\r\n<html><div>You are being attacked</div><html>\r\n\r\n"
     try:
         url: bytes = _[-1]
-        print(f"{url.decode()}, {len(data)}")
+        print(f"{url.decode()}, 45")
     except:
         data = b"HTTP/1.1 400 Bad Request\r\n\r\n"
     finally:
