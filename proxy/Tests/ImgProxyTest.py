@@ -61,7 +61,7 @@ class TestImgProxy(unittest.TestCase):
             )
 
     def test_run_unparsable_url(self) -> None:
-        url = "http://222.164.14.168/img_src"
+        url = "http://ocna0.d2.comp.nus.edu.sg:50000/tc2/img.jpg"
         try:
             response = requests.get(url, proxies=self.proxies)
         except Exception as e:
