@@ -18,7 +18,7 @@ For more information please use `python proxy -h` to see the full list of option
 
 ## Image Substitution Mode
 
-In Image substitution mode, the proxy will substitute images which are loaded with the image at the url defined in `./proxy/constants.py`
+In Image substitution mode, the proxy will substitute images which are loaded with the image at the url defined in `./proxy/Proxy/constants.py`
 
 ## Attack Mode
 
